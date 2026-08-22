@@ -1,58 +1,66 @@
-# 🚗 A* City Navigator Game (AI Lab Project)
+# 🚗 A* City Navigator (Interactive AI Lab Project)
 
-A visual simulation game built with **Python & Pygame** that demonstrates the **A\* (A-Star) Pathfinding Algorithm** in a dense urban city environment.
+A visual simulation game built with **Python & Pygame** that demonstrates the **A\* (A-Star) Pathfinding Algorithm** across multiple procedural urban city environments.
+
+---
+
+## 🌟 Key Features
+
+1. **Diverse Procedural City Presets (UI Clickable)**:
+   - ✈️ **Airport Hub**: International terminal concourse, long tarmac runways with threshold dashes, taxiways, and airport loop expressways.
+   - 🚦 **Busy Traffic Downtown**: Congested bottleneck streets (Cost $3.5$) surrounded by high-speed bypass ring expressways (Cost $1.0$). Demonstrates how A\* intelligently detours around heavy traffic!
+   - 🏙️ **Metropolis**: High-density grid with diagonal expressways, boulevard avenues, and central plazas.
+   - 🌊 **Coastal River**: Winding water canals, island districts, and bridges with custom crossing weights.
+   - 🏰 **Old Town**: Organic winding cobblestone alleys, random-walk roads, and plazas.
+   - ⚡ **Cyberpunk**: Super-block mega towers and interconnected alleyways.
+   - 🎲 **Random Sprawl**: Pure procedural organic arterial urban sprawl.
+
+2. **Lush Tree & Foliage System**:
+   - Multi-shaded organic trees with shadows, trunks, and layered leafy canopies across parks, sidewalks, and nature buffer zones.
+
+3. **Interactive UI Sidebar Dashboard**:
+   - Direct on-screen clickable buttons for map presets, random generator, journey replay, speed ($1\times, 2\times, 4\times$), and heuristic toggling.
+   - Live route telemetry showing $g(n)$, $h(n)$, and $f(n)$ calculations.
+
+4. **Clean Startup**:
+   - Starts with a clean map and no pre-selected points with an on-screen guidance banner.
+
+5. **Realistic Driving Simulation**:
+   - Car with smooth rotation $\theta = \text{atan2}(\Delta y, \Delta x)$, dynamic headlights beam, exhaust particles, and a glowing golden trail marking the traversed route.
 
 ---
 
 ## 📂 Project Architecture
 
-The project is modularized into two isolated layers:
-
 ```
 a_star_search_game/
-├── core_logic.py     # 🧠 Core A* Algorithm & Graph Representation (Pure Python, No Pygame)
-├── graphics.py       # 🎨 Pygame Visualizer, UI Dashboard, Particles & Vehicle Animations
-├── main.py           # 🚀 Game State Loop & Input Event Handler
+├── core_logic.py     # 🧠 Core A* Algorithm & Graph Map Generator (Pure Python, No Pygame)
+├── graphics.py       # 🎨 Pygame Visualizer, UI Buttons, Airport, Trees & Car Animation
+├── main.py           # 🚀 Main Game Loop & Click/Event Dispatcher
 └── README.md         # 📖 Project Documentation
 ```
 
-### 1. `core_logic.py` (Core Algorithm)
-- **Zero UI Dependency**: Can be imported and used anywhere independently.
-- **Formula**:
-  $$\mathbf{f(n) = g(n) + h(n)}$$
-  - $g(n)$: Exact movement cost from start to node $n$ (Avenues = 1.0, Streets = 1.4, Alleys = 2.0).
-  - $h(n)$: Heuristic estimate to the destination (supports Euclidean and Manhattan distance).
-  - $f(n)$: Total estimated path cost.
-- **Data Structures**: Priority Queue via Python's `heapq`, `came_from` dictionary for backwards path reconstruction, and visited sets for tracking explored nodes.
-
-### 2. `graphics.py` (Visuals & Animation)
-- **Urban Environment**: Renders road networks (avenues, streets), 3D isometric high-rise buildings with lighting, parks, and rooftop details.
-- **Smooth Travel Animation**: Smooth sub-pixel vector interpolation of vehicle position along shortest path waypoints with realistic car orientation angle $\theta = \text{atan2}(\Delta y, \Delta x)$, dynamic headlights, and exhaust particles.
-- **Telemetry HUD**: Displays current coordinates, explored node count, shortest path cost, journey progress bar, and controls.
-
-### 3. `main.py` (Game Runner)
-- Manages user interactions (point selection, speed adjustments, heuristic toggling).
-
 ---
 
-## 🕹️ Controls & Hotkeys
+## 🕹️ Controls
 
-| Action | Control |
-|---|---|
-| **Select Start / Goal Point** | `Left Click` on map |
-| **Replay Travel Animation** | `[SPACE]` |
-| **Change Travel Speed** | `[1]` (1x), `[2]` (2x), `[3]` (4x) |
-| **Toggle Heuristic** | `[H]` (Euclidean $\leftrightarrow$ Manhattan) |
-| **Generate New City** | `[G]` |
-| **Reset Selection** | `[R]` |
+- **`Left Click` (Map)**:
+  - **1st Click**: Places the **Start Point** (Green Marker).
+  - **2nd Click**: Places the **Destination** (Red Goal Beacon) $\rightarrow$ A\* finds the shortest path and the car drives.
+- **`Left Click` (Sidebar UI Buttons)**:
+  - Select any city preset (`Airport`, `Busy Traffic`, `Metropolis`, `Coastal`, `Old Town`, `Cyberpunk`, `Random Sprawl`), replay journey, adjust speed, or toggle heuristic.
+- **Keyboard Shortcuts**:
+  - `[SPACE]`: Replay Drive
+  - `[1 / 2 / 3]`: Change Speed ($1\times, 2\times, 4\times$)
+  - `[H]`: Toggle Heuristic (Euclidean $\leftrightarrow$ Manhattan)
+  - `[G]`: Generate New City Layout
+  - `[R]`: Reset Selection
 
 ---
 
 ## 🚀 How to Run
 
-Navigate to the game directory and run:
-
-```bash
-cd a_star_search_game
+```powershell
+cd e:\D_drive\Documents\ai_lab\a_star_search_game
 python main.py
 ```
