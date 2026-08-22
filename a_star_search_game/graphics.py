@@ -1,9 +1,16 @@
 """
 =============================================================================
-GRAPHICS & RENDERING ENGINE (PYGAME UI, INTERACTIVE HUD & MAP VISUALIZER)
+GRAPHICS & RENDERING ENGINE (VECTOR CARTOGRAPHY & MODERN UI)
 =============================================================================
-Handles rendering for airports, busy congested streets, lush roadside trees,
-water bridges, vehicle particle trails, and interactive UI buttons.
+State-of-the-art visual renderer inspired by modern vector cartography
+(Mapbox Dark & Mini Motorways):
+  - Procedural road junctions with zebra crosswalks
+  - Realistic airport tarmac with threshold piano-key markings & airplanes
+  - Varied building architecture (helipads, glass atriums, HVACs, spires)
+  - 3D shaded vector trees with specular highlights and ambient drop shadows
+  - Waterways with stone embankments & animated wave crests
+  - Laser route beam with glowing energy aura & dynamic vehicle lighting
+  - Sleek modern glassmorphism sidebar HUD
 =============================================================================
 """
 
@@ -19,57 +26,71 @@ from core_logic import (
     STYLE_OLD_TOWN, STYLE_CYBERPUNK, STYLE_RANDOM
 )
 
-# Colors Palette (Night Navigator Theme)
-COLOR_BG            = (16, 18, 24)
-COLOR_SIDEBAR_BG    = (21, 24, 33)
-COLOR_SIDEBAR_PANEL = (28, 33, 46)
-COLOR_SIDEBAR_BORDER= (42, 50, 68)
+# ==========================================
+# MODERN CURATED COLOR PALETTE (MAPBOX DARK / MINIMALIST VECTOR)
+# ==========================================
+COLOR_BG            = (18, 21, 30)      # Deep Slate Land Canvas
+COLOR_SIDEBAR_BG    = (22, 26, 38)      # Sidebar Charcoal
+COLOR_SIDEBAR_PANEL = (28, 34, 50)      # Glassmorphism Card
+COLOR_SIDEBAR_BORDER= (44, 54, 78)      # Card Border Trim
+COLOR_SIDEBAR_HIGHLIGHT = (0, 229, 255) # Electric Cyan Accent
 
-COLOR_ROAD_AVENUE   = (36, 40, 52)
-COLOR_ROAD_STREET   = (28, 32, 42)
-COLOR_ROAD_ALLEY    = (24, 27, 36)
-COLOR_ROAD_BRIDGE   = (65, 75, 95)
-COLOR_ROAD_BUSY     = (52, 38, 26)  # Amber congested tint
-COLOR_RUNWAY        = (22, 25, 32)  # Dark tarmac
-COLOR_LANE_MARK     = (80, 90, 115)
+# Road Infrastructure
+COLOR_ROAD_AVENUE   = (42, 48, 66)      # Broad Avenue Asphalt
+COLOR_ROAD_STREET   = (32, 37, 52)      # Standard Street Asphalt
+COLOR_ROAD_ALLEY    = (26, 30, 42)      # Narrow Alley Asphalt
+COLOR_ROAD_BRIDGE   = (70, 82, 108)     # Steel/Concrete Bridge Deck
+COLOR_ROAD_BUSY     = (62, 40, 24)      # Congested Amber Asphalt
+COLOR_RUNWAY        = (22, 25, 34)      # Dark Tarmac Runway
+COLOR_LANE_MARK     = (95, 108, 138)    # Road Lane Divider
+COLOR_CROSSWALK     = (180, 195, 225)   # Zebra Crosswalk Stripes
+COLOR_TAXIWAY_LINE  = (235, 185, 45)    # Airport Yellow Guide Line
 
-COLOR_WATER_BASE    = (15, 52, 85)
-COLOR_WATER_WAVE    = (22, 75, 120)
+# Water & Nature
+COLOR_WATER_BASE    = (14, 38, 62)      # Deep Midnight Water
+COLOR_WATER_WAVE    = (24, 60, 95)      # Wave Crest Highlight
+COLOR_SHORELINE     = (28, 65, 95)      # Stone Quay Embankment
+COLOR_PARK_BASE     = (22, 54, 38)      # Emerald Grassland Velvet
+COLOR_PARK_BORDER   = (32, 75, 52)
 
-COLOR_BUILDING_BASE = (36, 40, 54)
-COLOR_BUILDING_TOP  = (48, 54, 72)
-COLOR_BUILDING_GLOW = (65, 75, 100)
-COLOR_ROOF_ACCENT   = (75, 90, 125)
+# Tree Shading
+COLOR_TREE_SHADOW   = (10, 26, 18, 140) # Translucent Shadow
+COLOR_TREE_TRUNK    = (80, 52, 34)      # Wood Trunk
+COLOR_TREE_DARK     = (26, 80, 50)      # Base Foliage
+COLOR_TREE_MID      = (40, 122, 78)     # Mid Canopy
+COLOR_TREE_LIGHT    = (75, 185, 115)    # Specular Sunlight Highlight
+COLOR_PINE_DARK     = (20, 65, 45)
+COLOR_PINE_LIGHT    = (45, 130, 85)
 
-COLOR_PARK_BASE     = (20, 48, 34)
-COLOR_TREE_SHADOW   = (12, 28, 20)
-COLOR_TREE_CANOPY1  = (38, 115, 75)
-COLOR_TREE_CANOPY2  = (48, 140, 90)
-COLOR_TREE_CANOPY3  = (28, 85, 55)
+# 3D Architecture & Buildings
+COLOR_BUILDING_SHADOW = (10, 12, 18)
+COLOR_BUILDING_WALL   = (38, 44, 60)
+COLOR_BUILDING_ROOF   = (50, 58, 80)
+COLOR_ROOF_GLOW       = (68, 80, 110)
+COLOR_ROOF_ACCENT     = (78, 92, 125)
+COLOR_GLASS_TOWER     = (45, 75, 110)
+COLOR_GLASS_REFLECT   = (90, 150, 210)
+COLOR_HELIPAD_RING    = (240, 200, 30)
 
-COLOR_START         = (46, 213, 115)    # Emerald Green
-COLOR_GOAL          = (255, 71, 87)     # Crimson
-COLOR_VISITED       = (40, 95, 165, 65) # Translucent Blue Search Wave
-COLOR_PATH_LINE     = (0, 240, 255)     # Electric Cyan
-COLOR_TRAIL_LINE    = (255, 214, 10)    # Golden Yellow Traveled Path
+# A* Search & Vehicle Travel Visuals
+COLOR_START           = (46, 213, 115)  # Emerald Green Beacon
+COLOR_GOAL            = (255, 71, 87)   # Crimson Target
+COLOR_VISITED         = (0, 180, 255, 45)# Translucent Search Wave
+COLOR_PATH_LINE       = (0, 240, 255)   # Laser Neon Cyan
+COLOR_TRAIL_LINE      = (255, 214, 10)  # Traveled Golden Path
+COLOR_CAR_BODY        = (255, 204, 0)   # Golden Taxi / Sports Chassis
+COLOR_CAR_LIGHT       = (255, 252, 215, 80) # Headlight Projection Beam
 
-COLOR_CAR_BODY      = (255, 204, 0)     # Golden Yellow Sports Car
-COLOR_CAR_ROOF      = (30, 35, 48)
-COLOR_CAR_WHEEL     = (15, 15, 20)
-COLOR_CAR_LIGHT     = (255, 252, 210, 85)
-
-# Button Colors
-COLOR_BTN_NORMAL    = (35, 42, 58)
-COLOR_BTN_HOVER     = (48, 58, 80)
-COLOR_BTN_ACTIVE    = (0, 160, 210)
-
-COLOR_TEXT_PRIMARY  = (240, 244, 252)
-COLOR_TEXT_MUTED    = (135, 145, 170)
-COLOR_TEXT_ACCENT   = (0, 220, 255)
-COLOR_TEXT_GREEN    = (80, 230, 140)
-COLOR_TEXT_RED      = (255, 100, 110)
-COLOR_TEXT_GOLD     = (255, 215, 0)
-COLOR_TEXT_ORANGE   = (255, 165, 0)
+# UI Buttons & Typography
+COLOR_BTN_NORMAL      = (34, 42, 60)
+COLOR_BTN_HOVER       = (46, 58, 84)
+COLOR_BTN_ACTIVE      = (0, 155, 215)
+COLOR_TEXT_PRIMARY    = (242, 246, 255)
+COLOR_TEXT_MUTED      = (135, 148, 175)
+COLOR_TEXT_ACCENT     = (0, 225, 255)
+COLOR_TEXT_GREEN      = (80, 230, 140)
+COLOR_TEXT_RED        = (255, 100, 110)
+COLOR_TEXT_GOLD       = (255, 215, 0)
 
 
 class UIButton:
@@ -108,9 +129,9 @@ class VehicleParticle:
         self.x = x
         self.y = y
         self.lifetime = 1.0
-        self.decay = 0.06
-        spread = 0.5
-        speed = 0.7
+        self.decay = 0.055
+        spread = 0.45
+        speed = 0.75
         back_angle = angle + math.pi + (pygame.time.get_ticks() % 100 / 100.0 - 0.5) * spread
         self.vx = math.cos(back_angle) * speed
         self.vy = math.sin(back_angle) * speed
@@ -132,7 +153,7 @@ class Visualizer:
         self.map_width = map_cols * tile_size
         self.map_height = map_rows * tile_size
         
-        # Fonts
+        # Typography
         pygame.font.init()
         self.font_title = pygame.font.SysFont("Segoe UI, Arial, sans-serif", 17, bold=True)
         self.font_heading = pygame.font.SysFont("Segoe UI, Arial, sans-serif", 13, bold=True)
@@ -158,13 +179,13 @@ class Visualizer:
         self._init_ui_buttons()
 
     def _init_ui_buttons(self):
-        """Constructs interactive sidebar buttons."""
+        """Constructs modern interactive sidebar buttons."""
         sb_x = self.map_width + 14
         sb_w = self.screen.get_width() - self.map_width - 28
         
         self.buttons.clear()
 
-        # Row 1 & 2: City Presets (2 columns)
+        # Presets (2 columns)
         btn_w = (sb_w - 6) // 2
         y = 104
         self.btn_preset_airport = UIButton(pygame.Rect(sb_x, y, btn_w, 22), "✈️ Airport Hub", "style_Airport Hub", is_toggle=True, active=True)
@@ -237,129 +258,208 @@ class Visualizer:
     # ==========================================
 
     def draw_city(self, city_map: CityMap):
-        """Renders roads, airport runways, busy streets, bridges, trees, and buildings."""
+        """Renders roads, crosswalks, airport tarmac, buildings, water, and trees."""
         self.water_tick += 1
         pygame.draw.rect(self.screen, COLOR_BG, (0, 0, self.map_width, self.map_height))
 
-        # Pass 1: Ground, Water, Runways, Roads, Bridges
+        # --- Pass 1: Terrain, Water, Roads, Runways, Bridges ---
         for c in range(city_map.cols):
             for r in range(city_map.rows):
                 rect = (c * self.tile_size, r * self.tile_size, self.tile_size, self.tile_size)
                 tile_type = city_map.grid[c][r]
+                cx, cy = c * self.tile_size + self.tile_size // 2, r * self.tile_size + self.tile_size // 2
 
+                # 1. WATER & EMBANKMENT
                 if tile_type == TILE_WATER:
                     pygame.draw.rect(self.screen, COLOR_WATER_BASE, rect)
-                    wave_offset = int(math.sin((c + r + self.water_tick * 0.05)) * 3)
+                    # Quayside shoreline border
+                    for dc, dr in [(-1,0), (1,0), (0,-1), (0,1)]:
+                        nc, nr = c + dc, r + dr
+                        if 0 <= nc < city_map.cols and 0 <= nr < city_map.rows:
+                            if city_map.grid[nc][nr] != TILE_WATER and city_map.grid[nc][nr] != TILE_ROAD_BRIDGE:
+                                if dc == -1: pygame.draw.line(self.screen, COLOR_SHORELINE, (rect[0], rect[1]), (rect[0], rect[1]+rect[3]), 2)
+                                elif dc == 1: pygame.draw.line(self.screen, COLOR_SHORELINE, (rect[0]+rect[2], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), 2)
+                                elif dr == -1: pygame.draw.line(self.screen, COLOR_SHORELINE, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]), 2)
+                                elif dr == 1: pygame.draw.line(self.screen, COLOR_SHORELINE, (rect[0], rect[1]+rect[3]), (rect[0]+rect[2], rect[1]+rect[3]), 2)
+                    
+                    # Animated Wave Crests
+                    wave_offset = int(math.sin((c * 1.5 + r * 2.0 + self.water_tick * 0.06)) * 3)
                     wx = c * self.tile_size + 4
                     wy = r * self.tile_size + 14 + wave_offset
                     pygame.draw.line(self.screen, COLOR_WATER_WAVE, (wx, wy), (wx + self.tile_size - 8, wy), 1)
 
+                # 2. AIRPORT RUNWAY & TAXIWAY
                 elif tile_type == TILE_RUNWAY:
-                    # Airport Runway / Tarmac with painted runway dashes
                     pygame.draw.rect(self.screen, COLOR_RUNWAY, rect)
-                    cx, cy = c * self.tile_size + self.tile_size // 2, r * self.tile_size + self.tile_size // 2
-                    # White threshold center dashes
-                    pygame.draw.line(self.screen, (240, 245, 255), (cx - 8, cy), (cx + 8, cy), 2)
-                    # Runway side edge lines
-                    pygame.draw.line(self.screen, (100, 110, 130), (rect[0], rect[1] + 2), (rect[0] + rect[2], rect[1] + 2), 1)
-                    pygame.draw.line(self.screen, (100, 110, 130), (rect[0], rect[1] + rect[3] - 2), (rect[0] + rect[2], rect[1] + rect[3] - 2), 1)
+                    # Edge marker lights
+                    pygame.draw.circle(self.screen, (240, 245, 255), (rect[0] + 2, rect[1] + 2), 1)
+                    pygame.draw.circle(self.screen, (240, 245, 255), (rect[0] + rect[2] - 2, rect[1] + 2), 1)
+                    pygame.draw.circle(self.screen, (240, 245, 255), (rect[0] + 2, rect[1] + rect[3] - 2), 1)
+                    pygame.draw.circle(self.screen, (240, 245, 255), (rect[0] + rect[2] - 2, rect[1] + rect[3] - 2), 1)
+                    
+                    # Centerline threshold dashes
+                    pygame.draw.line(self.screen, (245, 245, 255), (cx - 9, cy), (cx + 9, cy), 2)
+                    # Yellow Taxiway guidance lines
+                    pygame.draw.line(self.screen, COLOR_TAXIWAY_LINE, (rect[0] + 4, cy + 8), (rect[0] + rect[2] - 4, cy + 8), 1)
 
+                # 3. BUSY CONGESTED STREETS
                 elif tile_type == TILE_ROAD_BUSY:
-                    # Heavy Traffic Road (Amber tint with congestion marks)
                     pygame.draw.rect(self.screen, COLOR_ROAD_BUSY, rect)
-                    cx, cy = c * self.tile_size + self.tile_size // 2, r * self.tile_size + self.tile_size // 2
-                    # Congestion warning indicator
-                    pygame.draw.circle(self.screen, (255, 140, 0), (cx, cy), 2)
+                    # Traffic warning pulse
+                    pulse_t = (math.sin(self.water_tick * 0.1 + c + r) + 1.0) * 0.5
+                    alpha_val = int(80 + pulse_t * 80)
+                    pygame.draw.circle(self.screen, (255, 140, 20), (cx, cy), 3)
 
+                # 4. BRIDGE OVER WATER
                 elif tile_type == TILE_ROAD_BRIDGE:
                     pygame.draw.rect(self.screen, COLOR_WATER_BASE, rect)
+                    # Deck
                     pygame.draw.rect(self.screen, COLOR_ROAD_BRIDGE, (rect[0], rect[1] + 4, rect[2], rect[3] - 8))
-                    pygame.draw.line(self.screen, (160, 180, 200), (rect[0], rect[1] + 4), (rect[0] + rect[2], rect[1] + 4), 2)
-                    pygame.draw.line(self.screen, (160, 180, 200), (rect[0], rect[1] + rect[3] - 4), (rect[0] + rect[2], rect[1] + rect[3] - 4), 2)
+                    # Steel Railings & Trusses
+                    pygame.draw.line(self.screen, (190, 210, 235), (rect[0], rect[1] + 4), (rect[0] + rect[2], rect[1] + 4), 2)
+                    pygame.draw.line(self.screen, (190, 210, 235), (rect[0], rect[1] + rect[3] - 4), (rect[0] + rect[2], rect[1] + rect[3] - 4), 2)
+                    # Suspension cables
+                    pygame.draw.line(self.screen, (130, 150, 180), (cx, rect[1] + 4), (cx, rect[1] + rect[3] - 4), 1)
 
+                # 5. MAJOR AVENUE
                 elif tile_type == TILE_ROAD_AVENUE:
                     pygame.draw.rect(self.screen, COLOR_ROAD_AVENUE, rect)
-                    cx, cy = c * self.tile_size + self.tile_size // 2, r * self.tile_size + self.tile_size // 2
+                    # Double center dash
                     pygame.draw.circle(self.screen, COLOR_LANE_MARK, (cx, cy), 1)
 
+                # 6. REGULAR STREET & ALLEY
                 elif tile_type == TILE_ROAD_STREET:
                     pygame.draw.rect(self.screen, COLOR_ROAD_STREET, rect)
-
                 elif tile_type == TILE_ROAD_ALLEY:
                     pygame.draw.rect(self.screen, COLOR_ROAD_ALLEY, rect)
 
-                elif tile_type == TILE_ROADBLOCK:
-                    pygame.draw.rect(self.screen, COLOR_ROAD_STREET, rect)
-                    pygame.draw.rect(self.screen, (220, 80, 30), (rect[0] + 4, rect[1] + 4, rect[2] - 8, rect[3] - 8), border_radius=2)
-                    pygame.draw.line(self.screen, (255, 255, 255), (rect[0] + 6, rect[1] + 6), (rect[0] + rect[2] - 6, rect[1] + rect[3] - 6), 2)
-
+                # 7. PARKS & GREENERY
                 elif tile_type == TILE_PARK:
                     pygame.draw.rect(self.screen, COLOR_PARK_BASE, rect)
+                    pygame.draw.rect(self.screen, COLOR_PARK_BORDER, rect, 1)
 
+                # 8. AIRPORT TERMINAL CONCOURSE
                 elif tile_type == TILE_AIRPORT_TERMINAL:
-                    # Glass Terminal concourse
-                    pygame.draw.rect(self.screen, (28, 38, 55), rect)
-                    pygame.draw.rect(self.screen, (70, 130, 180), (rect[0] + 3, rect[1] + 3, rect[2] - 6, rect[3] - 6), border_radius=3)
-                    # Air Traffic Radar Tower
-                    pygame.draw.circle(self.screen, (255, 255, 255), (rect[0] + rect[2] // 2, rect[1] + rect[3] // 2), 3)
+                    pygame.draw.rect(self.screen, (24, 32, 48), rect)
+                    pygame.draw.rect(self.screen, COLOR_GLASS_TOWER, (rect[0] + 2, rect[1] + 2, rect[2] - 4, rect[3] - 4), border_radius=3)
+                    # Glass reflection
+                    pygame.draw.line(self.screen, COLOR_GLASS_REFLECT, (rect[0] + 4, rect[1] + 4), (rect[0] + rect[2] - 6, rect[1] + 4), 1)
+                    # Radar Tower Beacon
+                    radar_angle = self.water_tick * 0.1
+                    rx = cx + int(math.cos(radar_angle) * 4)
+                    ry = cy + int(math.sin(radar_angle) * 4)
+                    pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy), 3)
+                    pygame.draw.circle(self.screen, (0, 220, 255), (rx, ry), 1)
 
-        # Pass 2: 3D Isometric Buildings
+        # --- Pass 1.5: Road Junctions & Zebra Crosswalks ---
+        for c in range(1, city_map.cols - 1):
+            for r in range(1, city_map.rows - 1):
+                if city_map.is_road(c, r):
+                    # Check if junction (3 or 4 connected roads)
+                    adj_roads = sum(1 for dc, dr in [(-1,0), (1,0), (0,-1), (0,1)] if city_map.is_road(c+dc, r+dr))
+                    if adj_roads >= 3:
+                        x = c * self.tile_size
+                        y = r * self.tile_size
+                        # Zebra crosswalk marks on junction perimeter
+                        for i in range(2, self.tile_size - 2, 4):
+                            pygame.draw.line(self.screen, COLOR_CROSSWALK, (x + i, y + 2), (x + i + 2, y + 2), 1)
+                            pygame.draw.line(self.screen, COLOR_CROSSWALK, (x + i, y + self.tile_size - 3), (x + i + 2, y + self.tile_size - 3), 1)
+
+        # --- Pass 2: 3D Isometric Buildings with Varied Architecture ---
         for c in range(city_map.cols):
             for r in range(city_map.rows):
                 if city_map.grid[c][r] == TILE_BUILDING:
                     x = c * self.tile_size
                     y = r * self.tile_size
                     h = city_map.building_heights.get((c, r), 2)
-                    color_idx = city_map.building_colors.get((c, r), 0)
+                    b_type = city_map.building_types.get((c, r), 0)
 
                     pad = 2
                     bx, by = x + pad, y + pad
                     bw, bh = self.tile_size - pad * 2, self.tile_size - pad * 2
-
-                    pygame.draw.rect(self.screen, (12, 14, 20), (bx, by, bw, bh))
-
-                    wall_color = COLOR_BUILDING_BASE
-                    top_color = COLOR_BUILDING_TOP
-                    if color_idx == 1:
-                        top_color = (55, 62, 82)
-                    elif color_idx == 2:
-                        top_color = (44, 58, 76)
-                    elif color_idx == 3:
-                        top_color = (50, 56, 66)
-
                     roof_shift = min(h * 2, 6)
+
+                    # Ambient Base Shadow
+                    pygame.draw.rect(self.screen, COLOR_BUILDING_SHADOW, (bx, by, bw, bh))
+
+                    # 3D Wall
+                    wall_color = COLOR_BUILDING_WALL
                     pygame.draw.rect(self.screen, wall_color, (bx, by, bw, bh))
-                    pygame.draw.rect(self.screen, top_color, (bx, by - roof_shift, bw, bh))
-                    pygame.draw.rect(self.screen, COLOR_BUILDING_GLOW, (bx, by - roof_shift, bw, bh), 1)
 
-                    if h >= 3:
-                        rcx, rcy = bx + bw // 2, by - roof_shift + bh // 2
+                    # Roof Types
+                    roof_y = by - roof_shift
+                    roof_rect = (bx, roof_y, bw, bh)
+
+                    if b_type == 1:
+                        # Helipad Building
+                        pygame.draw.rect(self.screen, (45, 52, 70), roof_rect)
+                        pygame.draw.rect(self.screen, COLOR_ROOF_GLOW, roof_rect, 1)
+                        rcx, rcy = bx + bw // 2, roof_y + bh // 2
+                        pygame.draw.circle(self.screen, COLOR_HELIPAD_RING, (rcx, rcy), 6, 1)
+                        # 'H' symbol
+                        pygame.draw.line(self.screen, COLOR_HELIPAD_RING, (rcx - 3, rcy - 3), (rcx - 3, rcy + 3), 1)
+                        pygame.draw.line(self.screen, COLOR_HELIPAD_RING, (rcx + 3, rcy - 3), (rcx + 3, rcy + 3), 1)
+                        pygame.draw.line(self.screen, COLOR_HELIPAD_RING, (rcx - 3, rcy), (rcx + 3, rcy), 1)
+
+                    elif b_type == 2:
+                        # Glass Skyscraper with Skylight Grid
+                        pygame.draw.rect(self.screen, COLOR_GLASS_TOWER, roof_rect)
+                        pygame.draw.rect(self.screen, COLOR_GLASS_REFLECT, roof_rect, 1)
+                        # Skylight cross hatch
+                        pygame.draw.line(self.screen, COLOR_GLASS_REFLECT, (bx + 4, roof_y + 4), (bx + bw - 4, roof_y + bh - 4), 1)
+                        pygame.draw.line(self.screen, COLOR_GLASS_REFLECT, (bx + bw - 4, roof_y + 4), (bx + 4, roof_y + bh - 4), 1)
+
+                    elif b_type == 3:
+                        # Residential Complex with Courtyard
+                        pygame.draw.rect(self.screen, (42, 50, 68), roof_rect)
+                        pygame.draw.rect(self.screen, COLOR_ROOF_GLOW, roof_rect, 1)
+                        # Inner terrace
+                        pygame.draw.rect(self.screen, (28, 34, 48), (bx + 4, roof_y + 4, bw - 8, bh - 8))
+
+                    else:
+                        # Standard Highrise with Rooftop HVAC & Antenna
+                        pygame.draw.rect(self.screen, COLOR_BUILDING_ROOF, roof_rect)
+                        pygame.draw.rect(self.screen, COLOR_ROOF_GLOW, roof_rect, 1)
+                        rcx, rcy = bx + bw // 2, roof_y + bh // 2
                         pygame.draw.rect(self.screen, COLOR_ROOF_ACCENT, (rcx - 3, rcy - 3, 6, 6))
-                        if h == 4:
-                            pygame.draw.circle(self.screen, (255, 50, 50), (rcx, rcy), 2)
 
-        # Pass 3: Lush Trees (with shadows, trunks & layered canopies)
+                    # Aviation Red Safety Beacon on Taller Towers
+                    if h >= 3:
+                        rcx, rcy = bx + bw // 2, roof_y + bh // 2
+                        beacon_pulse = (math.sin(self.water_tick * 0.15 + c * 3 + r) + 1.0) * 0.5
+                        if beacon_pulse > 0.4:
+                            pygame.draw.circle(self.screen, (255, 50, 50), (rcx, rcy - 2), 2)
+
+        # --- Pass 3: Lush Shaded Vector Trees ---
         for tx, ty, tree_type in city_map.trees:
             px = int(tx * self.tile_size)
             py = int(ty * self.tile_size)
 
-            # Shadow
-            pygame.draw.ellipse(self.screen, COLOR_TREE_SHADOW, (px - 5, py - 2, 10, 6))
+            # Drop Shadow
+            shadow_surf = pygame.Surface((14, 8), pygame.SRCALPHA)
+            pygame.draw.ellipse(shadow_surf, (10, 24, 16, 130), (0, 0, 14, 8))
+            self.screen.blit(shadow_surf, (px - 7, py - 2))
 
             # Trunk
-            pygame.draw.line(self.screen, (90, 60, 40), (px, py), (px, py - 4), 2)
+            pygame.draw.line(self.screen, COLOR_TREE_TRUNK, (px, py), (px, py - 4), 2)
 
-            # Layered Canopy
-            canopy_col = COLOR_TREE_CANOPY1 if tree_type == 0 else (COLOR_TREE_CANOPY2 if tree_type == 1 else COLOR_TREE_CANOPY3)
-            radius = 5 if tree_type == 0 else (6 if tree_type == 1 else 4)
+            # Shaded Spherical / Pine Canopy
+            if tree_type == 2:
+                # Pine Tree (Conical layered triangles)
+                pygame.draw.polygon(self.screen, COLOR_PINE_DARK, [(px, py - 12), (px - 5, py - 4), (px + 5, py - 4)])
+                pygame.draw.polygon(self.screen, COLOR_PINE_LIGHT, [(px, py - 12), (px - 2, py - 4), (px + 4, py - 4)])
+            else:
+                # Deciduous Tree (Layered 3D Spherical Volume)
+                rad = 6 if tree_type == 1 else 5
+                cy_tree = py - 6
+                # Base dark leaf sphere
+                pygame.draw.circle(self.screen, COLOR_TREE_DARK, (px, cy_tree), rad)
+                # Mid tone layer
+                pygame.draw.circle(self.screen, COLOR_TREE_MID, (px - 1, cy_tree - 1), rad - 1)
+                # Specular sunlight highlight (Top-left sun source)
+                pygame.draw.circle(self.screen, COLOR_TREE_LIGHT, (px - 2, cy_tree - 2), max(1, rad // 2))
 
-            # Outer leaves
-            pygame.draw.circle(self.screen, (20, 60, 40), (px, py - 5), radius + 1)
-            pygame.draw.circle(self.screen, canopy_col, (px, py - 5), radius)
-            # Highlight leaf
-            pygame.draw.circle(self.screen, (70, 180, 110), (px - 1, py - 6), max(1, radius // 2))
-
-        # Border between Map and Sidebar
+        # Map Border Divider
         pygame.draw.line(self.screen, COLOR_SIDEBAR_BORDER, (self.map_width, 0), (self.map_width, self.map_height), 2)
 
     # ==========================================
@@ -384,9 +484,9 @@ class Visualizer:
 
         points = [self.grid_to_screen(c, r) for c, r in path]
 
-        # 1. Planned cyan shortest path
-        for offset_width in (8, 6, 4):
-            pygame.draw.lines(self.screen, (0, 180, 240, 45), False, points, offset_width)
+        # 1. Planned Cyan Laser Path with Aura
+        for offset_width in (9, 6, 4):
+            pygame.draw.lines(self.screen, (0, 190, 255, 40), False, points, offset_width)
         pygame.draw.lines(self.screen, COLOR_PATH_LINE, False, points, 3)
 
         # 2. Traveled Golden Progress Trail
@@ -397,7 +497,7 @@ class Visualizer:
                 pygame.draw.lines(self.screen, (255, 215, 0, 70), False, traveled_pts, 7)
                 pygame.draw.lines(self.screen, COLOR_TRAIL_LINE, False, traveled_pts, 3)
 
-        # 3. Waypoints
+        # 3. Waypoint Dots
         for pt in points:
             pygame.draw.circle(self.screen, (255, 255, 255), pt, 2)
 
@@ -498,14 +598,15 @@ class Visualizer:
 
     def draw_vehicle(self):
         """Renders the vehicle, headlights, tires, and smoke particles."""
+        # 1. Exhaust particles
         for p in self.particles:
             alpha = int(p.lifetime * 190)
             psurf = pygame.Surface((int(p.radius * 2) + 2, int(p.radius * 2) + 2), pygame.SRCALPHA)
             pygame.draw.circle(psurf, (0, 220, 255, alpha), (int(p.radius) + 1, int(p.radius) + 1), int(p.radius))
             self.screen.blit(psurf, (p.x - p.radius - 1, p.y - p.radius - 1))
 
-        # Headlights
-        cone_length = 32
+        # 2. Dynamic Realistic Headlights
+        cone_length = 34
         cone_spread = 0.42
         p_left = (
             self.car_x + math.cos(self.car_angle - cone_spread) * cone_length,
@@ -519,26 +620,31 @@ class Visualizer:
         pygame.draw.polygon(headlight_surf, COLOR_CAR_LIGHT, [(self.car_x, self.car_y), p_left, p_right])
         self.screen.blit(headlight_surf, (0, 0))
 
-        # Vehicle Sprite
+        # 3. Vehicle Sprite (Sports Taxi)
         car_w, car_h = 22, 14
         car_surf = pygame.Surface((car_w, car_h), pygame.SRCALPHA)
 
-        pygame.draw.rect(car_surf, COLOR_CAR_WHEEL, (3, 0, 4, 3), border_radius=1)
-        pygame.draw.rect(car_surf, COLOR_CAR_WHEEL, (15, 0, 4, 3), border_radius=1)
-        pygame.draw.rect(car_surf, COLOR_CAR_WHEEL, (3, 11, 4, 3), border_radius=1)
-        pygame.draw.rect(car_surf, COLOR_CAR_WHEEL, (15, 11, 4, 3), border_radius=1)
+        # Tires
+        pygame.draw.rect(car_surf, (15, 15, 20), (3, 0, 4, 3), border_radius=1)
+        pygame.draw.rect(car_surf, (15, 15, 20), (15, 0, 4, 3), border_radius=1)
+        pygame.draw.rect(car_surf, (15, 15, 20), (3, 11, 4, 3), border_radius=1)
+        pygame.draw.rect(car_surf, (15, 15, 20), (15, 11, 4, 3), border_radius=1)
 
+        # Metallic Yellow Body
         pygame.draw.rect(car_surf, COLOR_CAR_BODY, (2, 2, 18, 10), border_radius=3)
-        pygame.draw.rect(car_surf, (255, 230, 70), (3, 3, 16, 8), border_radius=2)
+        pygame.draw.rect(car_surf, (255, 235, 80), (3, 3, 16, 8), border_radius=2)
 
-        pygame.draw.rect(car_surf, COLOR_CAR_ROOF, (7, 4, 8, 6), border_radius=1)
-        pygame.draw.rect(car_surf, (100, 180, 240), (12, 5, 2, 4))
+        # Tinted Glass Cabin
+        pygame.draw.rect(car_surf, (28, 34, 46), (7, 4, 8, 6), border_radius=1)
+        pygame.draw.rect(car_surf, (110, 190, 255), (12, 5, 2, 4))
+        # Taxi Amber Beacon
         pygame.draw.rect(car_surf, (255, 140, 0), (9, 5, 4, 4), border_radius=1)
 
-        pygame.draw.rect(car_surf, (255, 255, 220), (19, 3, 2, 3))
-        pygame.draw.rect(car_surf, (255, 255, 220), (19, 8, 2, 3))
-        pygame.draw.rect(car_surf, (255, 30, 30), (1, 3, 2, 2))
-        pygame.draw.rect(car_surf, (255, 30, 30), (1, 9, 2, 2))
+        # Lights
+        pygame.draw.rect(car_surf, (255, 255, 230), (19, 3, 2, 3))
+        pygame.draw.rect(car_surf, (255, 255, 230), (19, 8, 2, 3))
+        pygame.draw.rect(car_surf, (255, 35, 35), (1, 3, 2, 2))
+        pygame.draw.rect(car_surf, (255, 35, 35), (1, 9, 2, 2))
 
         rotated = pygame.transform.rotate(car_surf, -math.degrees(self.car_angle))
         rect = rotated.get_rect(center=(int(self.car_x), int(self.car_y)))
@@ -686,7 +792,7 @@ class Visualizer:
             (COLOR_ROAD_BRIDGE, "Bridge Over River (Cost: 1.2)"),
             (COLOR_ROAD_STREET, "City Street (Cost: 1.5)"),
             (COLOR_ROAD_BUSY, "Busy Traffic (Cost: 3.5)"),
-            (COLOR_TREE_CANOPY1, "Roadside / Park Trees"),
+            (COLOR_TREE_MID, "Roadside / Park Trees"),
         ]
 
         for col, desc_text in legend_items:

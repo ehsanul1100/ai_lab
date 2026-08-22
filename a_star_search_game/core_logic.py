@@ -12,7 +12,7 @@ Isolated Core AI Engine:
      - ⚡ Cyberpunk Mega-District
      - 🎲 Procedural Random Urban Sprawl
   2. Diverse Road Types with Differential Movement Costs (Avenues, Busy Traffic, Runways, Bridges)
-  3. Tree & Foliage Placement Map for Visuals
+  3. Building Architecture Shapes & Tree Foliage Placement Map
   4. Manhattan & Euclidean Heuristic Functions
   5. Classic A* Search: f(n) = g(n) + h(n) with Path Reconstruction
 =============================================================================
@@ -96,8 +96,8 @@ class CityMap:
             
         self.grid: List[List[int]] = [[TILE_BUILDING for _ in range(rows)] for _ in range(cols)]
         self.building_heights: Dict[Node, int] = {}
-        self.building_colors: Dict[Node, int] = {}
-        self.trees: Set[Tuple[float, float, int]] = set() # (x_pixel_or_grid, y_pixel_or_grid, size_type)
+        self.building_types: Dict[Node, int] = {}  # 0=standard, 1=helipad, 2=glass tower, 3=residential
+        self.trees: Set[Tuple[float, float, int]] = set() # (x, y, tree_variant)
         self.road_nodes: List[Node] = []
         
         self.generate_city(self.style)
@@ -112,7 +112,7 @@ class CityMap:
             for r in range(self.rows):
                 self.grid[c][r] = TILE_BUILDING
                 self.building_heights[(c, r)] = random.randint(1, 4)
-                self.building_colors[(c, r)] = random.randint(0, 3)
+                self.building_types[(c, r)] = random.choice([0, 0, 1, 2, 3])
 
         if style == STYLE_AIRPORT:
             self._gen_airport()
@@ -129,10 +129,7 @@ class CityMap:
         else:
             self._gen_random_sprawl()
 
-        # Place decorative trees on parks, grass buffers, and roadside sidewalks
         self._populate_trees()
-
-        # Cache drivable road nodes
         self._update_road_nodes()
 
     def _update_road_nodes(self):
@@ -143,39 +140,38 @@ class CityMap:
 
     # --- Generator 1: Airport Hub City ---
     def _gen_airport(self):
-        # Left half = Commercial city; Right half = International Airport
         split_c = self.cols // 2 - 1
 
-        # 1. Airport Runways (Long straight runways)
+        # Airport Runways
         runway_r1 = 4
         runway_r2 = 14
         for c in range(split_c + 3, self.cols - 1):
             self.grid[c][runway_r1] = TILE_RUNWAY
             self.grid[c][runway_r2] = TILE_RUNWAY
 
-        # Taxiway connecting runways
+        # Taxiways
         for r in range(runway_r1, runway_r2 + 1):
             self.grid[split_c + 3][r] = TILE_RUNWAY
             self.grid[self.cols - 2][r] = TILE_RUNWAY
 
-        # Airport Terminal & Concourse
+        # Terminal & Concourse
         for c in range(split_c + 1, split_c + 3):
             for r in range(7, 12):
                 self.grid[c][r] = TILE_AIRPORT_TERMINAL
 
-        # Airport Buffer Grass
+        # Airport Green Grass Zone
         for c in range(split_c + 4, self.cols - 2):
             for r in range(runway_r1 + 2, runway_r2 - 1):
                 self.grid[c][r] = TILE_PARK
 
-        # 2. Airport Expressway (Ring highway around airport to city)
+        # Highway Loop
         for r in range(self.rows):
             self.grid[split_c][r] = TILE_ROAD_AVENUE
         for c in range(split_c, self.cols):
             self.grid[c][1] = TILE_ROAD_AVENUE
             self.grid[c][self.rows - 2] = TILE_ROAD_AVENUE
 
-        # 3. City Side (West)
+        # City Side (West)
         for c in range(1, split_c, 3):
             for r in range(self.rows):
                 self.grid[c][r] = TILE_ROAD_AVENUE
@@ -183,9 +179,9 @@ class CityMap:
             for c in range(split_c + 1):
                 self.grid[c][r] = TILE_ROAD_STREET
 
-    # --- Generator 2: Busy Traffic Downtown (Heavy Traffic vs Fast Highway Ring) ---
+    # --- Generator 2: Busy Traffic Downtown ---
     def _gen_busy_streets(self):
-        # Fast outer perimeter ring expressway (Cost 1.0)
+        # Ring expressway (Cost 1.0)
         for c in range(1, self.cols - 1):
             self.grid[c][1] = TILE_ROAD_AVENUE
             self.grid[c][self.rows - 2] = TILE_ROAD_AVENUE
@@ -193,22 +189,19 @@ class CityMap:
             self.grid[1][r] = TILE_ROAD_AVENUE
             self.grid[self.cols - 2][r] = TILE_ROAD_AVENUE
 
-        # Dense inner streets (Heavily congested with traffic, Cost 3.5)
+        # Congested downtown grid (Cost 3.5)
         for c in range(3, self.cols - 3, 2):
             for r in range(3, self.rows - 3):
-                # Busy traffic bottleneck
                 self.grid[c][r] = TILE_ROAD_BUSY if random.random() < 0.75 else TILE_ROAD_STREET
 
         for r in range(3, self.rows - 3, 2):
             for c in range(3, self.cols - 3):
                 self.grid[c][r] = TILE_ROAD_BUSY if random.random() < 0.75 else TILE_ROAD_STREET
 
-        # Highway bypass connectors
         mid_c = self.cols // 2
         for r in range(self.rows):
             self.grid[mid_c][r] = TILE_ROAD_AVENUE
 
-        # City Square Park in center
         cx, cy = self.cols // 2, self.rows // 2
         for dc in (-2, -1, 1, 2):
             for dr in (-1, 0, 1):
@@ -378,26 +371,21 @@ class CityMap:
 
     # --- Tree & Foliage Population ---
     def _populate_trees(self):
-        """Generates lush trees on park tiles, sidewalks, and nature pockets."""
         for c in range(self.cols):
             for r in range(self.rows):
                 tile = self.grid[c][r]
-                # In Parks: Dense tree clusters
                 if tile == TILE_PARK:
                     num_trees = random.randint(2, 4)
                     for _ in range(num_trees):
-                        ox = c + random.uniform(0.15, 0.85)
-                        oy = r + random.uniform(0.15, 0.85)
-                        tree_type = random.choice([0, 1, 2]) # Small, Medium, Pine
-                        self.trees.add((ox, oy, tree_type))
+                        ox = c + random.uniform(0.18, 0.82)
+                        oy = r + random.uniform(0.18, 0.82)
+                        self.trees.add((ox, oy, random.choice([0, 1, 2])))
                 
-                # Near Avenues / Boulevard Sidewalks: Street trees
-                elif tile == TILE_ROAD_AVENUE and random.random() < 0.22:
-                    # Place a sidewalk tree on an adjacent building corner/grass
+                elif tile == TILE_ROAD_AVENUE and random.random() < 0.25:
                     for dc, dr in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
                         nc, nr = c + dc, r + dr
                         if 0 <= nc < self.cols and 0 <= nr < self.rows:
-                            if self.grid[nc][nr] == TILE_BUILDING and random.random() < 0.18:
+                            if self.grid[nc][nr] == TILE_BUILDING and random.random() < 0.20:
                                 self.trees.add((nc + 0.5, nr + 0.5, random.choice([0, 1])))
 
     # --- Utility Methods ---
