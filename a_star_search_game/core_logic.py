@@ -14,7 +14,7 @@ Isolated Core AI Engine:
   2. Diverse Road Types with Differential Movement Costs (Avenues, Busy Traffic, Runways, Bridges)
   3. Building Architecture Shapes & Tree Foliage Placement Map
   4. Manhattan & Euclidean Heuristic Functions
-  5. Classic A* Search: f(n) = g(n) + h(n) with Path Reconstruction
+  5. Classic A* Search: f(n) = g(n) + h(n) with Step-by-Step Traversal Tree
 =============================================================================
 """
 
@@ -96,8 +96,8 @@ class CityMap:
             
         self.grid: List[List[int]] = [[TILE_BUILDING for _ in range(rows)] for _ in range(cols)]
         self.building_heights: Dict[Node, int] = {}
-        self.building_types: Dict[Node, int] = {}  # 0=standard, 1=helipad, 2=glass tower, 3=residential
-        self.trees: Set[Tuple[float, float, int]] = set() # (x, y, tree_variant)
+        self.building_types: Dict[Node, int] = {}
+        self.trees: Set[Tuple[float, float, int]] = set()
         self.road_nodes: List[Node] = []
         
         self.generate_city(self.style)
@@ -107,7 +107,6 @@ class CityMap:
         self.style = style
         self.trees.clear()
 
-        # Reset base to buildings
         for c in range(self.cols):
             for r in range(self.rows):
                 self.grid[c][r] = TILE_BUILDING
@@ -142,36 +141,30 @@ class CityMap:
     def _gen_airport(self):
         split_c = self.cols // 2 - 1
 
-        # Airport Runways
         runway_r1 = 4
         runway_r2 = 14
         for c in range(split_c + 3, self.cols - 1):
             self.grid[c][runway_r1] = TILE_RUNWAY
             self.grid[c][runway_r2] = TILE_RUNWAY
 
-        # Taxiways
         for r in range(runway_r1, runway_r2 + 1):
             self.grid[split_c + 3][r] = TILE_RUNWAY
             self.grid[self.cols - 2][r] = TILE_RUNWAY
 
-        # Terminal & Concourse
         for c in range(split_c + 1, split_c + 3):
             for r in range(7, 12):
                 self.grid[c][r] = TILE_AIRPORT_TERMINAL
 
-        # Airport Green Grass Zone
         for c in range(split_c + 4, self.cols - 2):
             for r in range(runway_r1 + 2, runway_r2 - 1):
                 self.grid[c][r] = TILE_PARK
 
-        # Highway Loop
         for r in range(self.rows):
             self.grid[split_c][r] = TILE_ROAD_AVENUE
         for c in range(split_c, self.cols):
             self.grid[c][1] = TILE_ROAD_AVENUE
             self.grid[c][self.rows - 2] = TILE_ROAD_AVENUE
 
-        # City Side (West)
         for c in range(1, split_c, 3):
             for r in range(self.rows):
                 self.grid[c][r] = TILE_ROAD_AVENUE
@@ -181,7 +174,6 @@ class CityMap:
 
     # --- Generator 2: Busy Traffic Downtown ---
     def _gen_busy_streets(self):
-        # Ring expressway (Cost 1.0)
         for c in range(1, self.cols - 1):
             self.grid[c][1] = TILE_ROAD_AVENUE
             self.grid[c][self.rows - 2] = TILE_ROAD_AVENUE
@@ -189,7 +181,6 @@ class CityMap:
             self.grid[1][r] = TILE_ROAD_AVENUE
             self.grid[self.cols - 2][r] = TILE_ROAD_AVENUE
 
-        # Congested downtown grid (Cost 3.5)
         for c in range(3, self.cols - 3, 2):
             for r in range(3, self.rows - 3):
                 self.grid[c][r] = TILE_ROAD_BUSY if random.random() < 0.75 else TILE_ROAD_STREET
@@ -390,13 +381,11 @@ class CityMap:
 
     # --- Utility Methods ---
     def is_road(self, c: int, r: int) -> bool:
-        """Returns True if the grid coordinate is a traversable road/runway."""
         if 0 <= c < self.cols and 0 <= r < self.rows:
             return self.grid[c][r] in ROAD_COSTS
         return False
 
     def get_neighbors(self, node: Node) -> List[Tuple[Node, float]]:
-        """Returns adjacent reachable road tiles and edge movement cost."""
         c, r = node
         neighbors = []
         directions = [(0, -1), (0, 1), (-1, 0), (1, 0)]
@@ -411,7 +400,6 @@ class CityMap:
         return neighbors
 
     def get_nearest_road(self, col: int, row: int) -> Optional[Node]:
-        """Finds the closest drivable road node to any clicked tile."""
         if self.is_road(col, row):
             return (col, row)
         
@@ -438,14 +426,16 @@ class AStarResult:
         visited_order: List[Node], 
         explored_count: int, 
         g_scores: Dict[Node, float],
-        f_scores: Dict[Node, float]
+        f_scores: Dict[Node, float],
+        came_from: Dict[Node, Node]
     ):
-        self.path = path
-        self.total_cost = total_cost
-        self.visited_order = visited_order
-        self.explored_count = explored_count
-        self.g_scores = g_scores
-        self.f_scores = f_scores
+        self.path = path                       # Shortest path node sequence
+        self.total_cost = total_cost           # Total optimal cost g(goal)
+        self.visited_order = visited_order     # Exact step-by-step traversal order
+        self.explored_count = explored_count   # Number of explored nodes
+        self.g_scores = g_scores               # g(n) map
+        self.f_scores = f_scores               # f(n) map
+        self.came_from = came_from             # Search expansion parent tree
 
 
 def a_star_search(
@@ -459,7 +449,7 @@ def a_star_search(
     Formula: f(n) = g(n) + h(n)
     """
     if start == goal:
-        return AStarResult([start], 0.0, [start], 1, {start: 0.0}, {start: 0.0})
+        return AStarResult([start], 0.0, [start], 1, {start: 0.0}, {start: 0.0}, {})
 
     h_func = heuristic_euclidean if heuristic_type == "euclidean" else heuristic_manhattan
 
@@ -500,7 +490,8 @@ def a_star_search(
                 visited_order=visited_order,
                 explored_count=len(visited_set),
                 g_scores=g_score,
-                f_scores=f_score
+                f_scores=f_score,
+                came_from=came_from
             )
 
         for neighbor, edge_cost in city_map.get_neighbors(current):

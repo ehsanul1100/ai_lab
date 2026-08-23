@@ -9,9 +9,9 @@ Usage:
 
 Controls:
   - Mouse Left Click  : Select Start Point, then select Destination
-  - UI Sidebar Buttons: Change City Map Presets, Randomize, Speed, Heuristic
-  - [SPACE]           : Replay Travel Animation
-  - [1 / 2 / 3]       : Set Travel Speed (1x, 2x, 4x)
+  - UI Sidebar Buttons: Change City Map Presets, Randomize, Speed, Heuristic, Skip
+  - [SPACE]           : Replay Search Traversal & Drive Animation
+  - [1 / 2 / 3]       : Set Animation Speed (1x, 2x, 4x)
   - [H]               : Toggle Heuristic (Euclidean <-> Manhattan)
   - [G]               : Generate New City Layout
   - [R]               : Reset Selection
@@ -38,13 +38,14 @@ MAP_ROWS = 20
 # State Constants
 STATE_SELECT_START = "SELECT START POINT"
 STATE_SELECT_GOAL = "SELECT DESTINATION"
+STATE_EXPLORING = "EXPLORING NODES (A* SEARCH)"
 STATE_TRAVELLING = "TRAVELLING TO DESTINATION"
 STATE_ARRIVED = "ARRIVED AT DESTINATION"
 
 
 def main():
     pygame.init()
-    pygame.display.set_caption("A* Search Algorithm - Interactive City Navigator")
+    pygame.display.set_caption("A* Search Algorithm - Node Traversal & City Navigator")
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     clock = pygame.time.Clock()
 
@@ -62,8 +63,11 @@ def main():
     heuristic_type = "euclidean"
     base_speed = 0.08
     speed_multiplier = 1.0
+    
+    is_searching = False
     is_traveling = False
     is_arrived = False
+    active_eval_node: Node = None
 
     running = True
     pulse_tick = 0
@@ -96,7 +100,7 @@ def main():
                         current_city_style = new_style
                         city_map.generate_city(current_city_style)
                         start_node, goal_node, a_star_result = None, None, None
-                        is_traveling, is_arrived = False, False
+                        is_searching, is_traveling, is_arrived = False, False, False
                         visualizer.reset_vehicle(None)
                         current_state = STATE_SELECT_START
 
@@ -104,20 +108,30 @@ def main():
                         current_city_style = STYLE_RANDOM
                         city_map.generate_city(STYLE_RANDOM)
                         start_node, goal_node, a_star_result = None, None, None
-                        is_traveling, is_arrived = False, False
+                        is_searching, is_traveling, is_arrived = False, False, False
                         visualizer.reset_vehicle(None)
                         current_state = STATE_SELECT_START
 
                     elif btn_action == "replay":
                         if a_star_result and a_star_result.path:
                             visualizer.reset_vehicle(start_node)
+                            visualizer.search_step = 0
+                            is_searching = True
+                            is_traveling = False
+                            is_arrived = False
+                            current_state = STATE_EXPLORING
+
+                    elif btn_action == "skip_to_drive":
+                        if a_star_result and a_star_result.path:
+                            visualizer.search_step = a_star_result.explored_count
+                            is_searching = False
                             is_traveling = True
                             is_arrived = False
                             current_state = STATE_TRAVELLING
 
                     elif btn_action == "reset":
                         start_node, goal_node, a_star_result = None, None, None
-                        is_traveling, is_arrived = False, False
+                        is_searching, is_traveling, is_arrived = False, False, False
                         visualizer.reset_vehicle(None)
                         current_state = STATE_SELECT_START
 
@@ -126,9 +140,11 @@ def main():
                         if start_node and goal_node:
                             a_star_result = a_star_search(city_map, start_node, goal_node, heuristic_type)
                             visualizer.reset_vehicle(start_node)
-                            is_traveling = True
+                            visualizer.search_step = 0
+                            is_searching = True
+                            is_traveling = False
                             is_arrived = False
-                            current_state = STATE_TRAVELLING
+                            current_state = STATE_EXPLORING
 
                     elif btn_action == "speed_1":
                         speed_multiplier = 1.0
@@ -149,54 +165,60 @@ def main():
                                 start_node = road_node
                                 goal_node = None
                                 a_star_result = None
-                                is_traveling = False
-                                is_arrived = False
+                                is_searching, is_traveling, is_arrived = False, False, False
                                 visualizer.reset_vehicle(start_node)
                                 current_state = STATE_SELECT_GOAL
 
                             elif current_state == STATE_SELECT_GOAL or (start_node is not None and goal_node is None):
-                                # 2nd Click: Select Destination & Compute A*
+                                # 2nd Click: Select Destination & Begin Step-by-Step Node Exploration
                                 goal_node = road_node
                                 a_star_result = a_star_search(city_map, start_node, goal_node, heuristic_type)
                                 visualizer.reset_vehicle(start_node)
+                                visualizer.search_step = 0
                                 
                                 if a_star_result and a_star_result.path:
-                                    current_state = STATE_TRAVELLING
-                                    is_traveling = True
+                                    is_searching = True
+                                    is_traveling = False
                                     is_arrived = False
+                                    current_state = STATE_EXPLORING
                                 else:
                                     current_state = "NO PATH FOUND"
-                                    is_traveling = False
+                                    is_searching, is_traveling = False, False
 
-                            elif current_state == STATE_TRAVELLING:
-                                # Dynamic Re-routing: Set new destination mid-drive
+                            elif current_state in (STATE_EXPLORING, STATE_TRAVELLING):
+                                # Re-route to new destination
                                 goal_node = road_node
                                 a_star_result = a_star_search(city_map, start_node, goal_node, heuristic_type)
                                 visualizer.reset_vehicle(start_node)
-                                is_traveling = True
+                                visualizer.search_step = 0
+                                is_searching = True
+                                is_traveling = False
                                 is_arrived = False
+                                current_state = STATE_EXPLORING
 
             elif event.type == pygame.KEYDOWN:
                 # [R] Reset Selection
                 if event.key == pygame.K_r:
                     start_node, goal_node, a_star_result = None, None, None
-                    is_traveling, is_arrived = False, False
+                    is_searching, is_traveling, is_arrived = False, False, False
                     visualizer.reset_vehicle(None)
                     current_state = STATE_SELECT_START
 
-                # [SPACE] Replay Journey
+                # [SPACE] Replay Journey & Search Wave
                 elif event.key == pygame.K_SPACE:
                     if a_star_result and a_star_result.path:
                         visualizer.reset_vehicle(start_node)
-                        is_traveling = True
+                        visualizer.search_step = 0
+                        is_searching = True
+                        is_traveling = False
                         is_arrived = False
-                        current_state = STATE_TRAVELLING
+                        current_state = STATE_EXPLORING
 
                 # [G] Generate Fresh City
                 elif event.key == pygame.K_g:
                     city_map.generate_city(current_city_style)
                     start_node, goal_node, a_star_result = None, None, None
-                    is_traveling, is_arrived = False, False
+                    is_searching, is_traveling, is_arrived = False, False, False
                     visualizer.reset_vehicle(None)
                     current_state = STATE_SELECT_START
 
@@ -206,9 +228,11 @@ def main():
                     if start_node and goal_node:
                         a_star_result = a_star_search(city_map, start_node, goal_node, heuristic_type)
                         visualizer.reset_vehicle(start_node)
-                        is_traveling = True
+                        visualizer.search_step = 0
+                        is_searching = True
+                        is_traveling = False
                         is_arrived = False
-                        current_state = STATE_TRAVELLING
+                        current_state = STATE_EXPLORING
 
                 # [1 / 2 / 3] Speed Multipliers
                 elif event.key == pygame.K_1:
@@ -219,9 +243,22 @@ def main():
                     speed_multiplier = 4.0
 
         # -------------------------------------------------------------
-        # 2. VEHICLE PHYSICS & PATH UPDATES
+        # 2. LOGIC & ANIMATION STATE UPDATES
         # -------------------------------------------------------------
-        if is_traveling and a_star_result and a_star_result.path:
+        # Phase 1: Step-by-Step Node Search Traversal Animation
+        if is_searching and a_star_result:
+            nodes_per_frame = max(1, int(3 * speed_multiplier))
+            visualizer.search_step += nodes_per_frame
+
+            if visualizer.search_step >= a_star_result.explored_count:
+                # Search exploration complete -> Lock shortest path and start driving!
+                is_searching = False
+                is_traveling = True
+                is_arrived = False
+                current_state = STATE_TRAVELLING
+
+        # Phase 2: Vehicle Travel along Shortest Path
+        elif is_traveling and a_star_result and a_star_result.path:
             effective_speed = base_speed * speed_multiplier
             reached_end = visualizer.update_vehicle(a_star_result.path, speed=effective_speed)
             if reached_end:
@@ -232,28 +269,30 @@ def main():
         # -------------------------------------------------------------
         # 3. RENDERING PASS
         # -------------------------------------------------------------
-        # 1. City Map Layer (Terrain, Roads, Bridges, Trees, Buildings)
+        # Layer 1: City Map Layer (Terrain, Roads, Bridges, Trees, Buildings)
         visualizer.draw_city(city_map)
 
-        # 2. A* Search Wave Expansion
-        visualizer.draw_search_frontier(a_star_result)
+        # Layer 2: Step-by-Step Search Traversal & Branch Tree
+        active_eval_node = None
+        if a_star_result:
+            active_eval_node = visualizer.draw_node_traversal_animation(a_star_result, visualizer.search_step)
 
-        # 3. Shortest Path & Traveled Progress Trail
-        if a_star_result and a_star_result.path:
+        # Layer 3: Shortest Path Laser & Traveled Progress Trail (Shown when found)
+        if a_star_result and a_star_result.path and not is_searching:
             visualizer.draw_path(a_star_result.path)
 
-        # 4. Start & Goal Beacons
+        # Layer 4: Start & Goal Beacons
         visualizer.draw_endpoints(start_node, goal_node, pulse_tick)
 
-        # 5. Startup Guidance Overlay (Shown only when nothing is selected)
+        # Layer 5: Startup Guidance Overlay (Shown only when nothing is selected)
         if start_node is None:
             visualizer.draw_startup_prompt()
 
-        # 6. Car Sprite, Headlights & Smoke
+        # Layer 6: Vehicle Sprite, Dynamic Headlights & Smoke
         if start_node is not None:
             visualizer.draw_vehicle()
 
-        # 7. Sidebar Dashboard & Interactive UI Buttons
+        # Layer 7: Sidebar Dashboard & Live Telemetry
         visualizer.draw_sidebar(
             state_text=current_state,
             start_node=start_node,
@@ -262,8 +301,10 @@ def main():
             heuristic_name=heuristic_type,
             speed_multiplier=speed_multiplier,
             current_city_style=current_city_style,
+            is_searching=is_searching,
             is_traveling=is_traveling,
-            is_arrived=is_arrived
+            is_arrived=is_arrived,
+            active_node=active_eval_node
         )
 
         # Swap Framebuffers
